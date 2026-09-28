@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Bosque Mágico de las Letras - Juego Educativo 1° Básico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            font-family: 'Fredoka', 'Quicksand', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Canvas game styling */
+        #game-container {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 4px solid #4ade80;
+        }
+
+        /* Custom buttons styling */
+        .btn-magical {
+            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+            border-bottom: 5px solid #b45309;
+            transition: all 0.1s ease;
+        }
+
+        .btn-magical:active {
+            transform: translateY(3px);
+            border-bottom: 2px solid #b45309;
+        }
+
+        .btn-purple {
+            background: linear-gradient(180deg, #a855f7 0%, #9333ea 100%);
+            border-bottom: 5px solid #6b21a8;
+        }
+
+        .btn-purple:active {
+            transform: translateY(3px);
+            border-bottom: 2px solid #6b21a8;
+        }
+
+        .btn-blue {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border-bottom: 5px solid #0369a1;
+        }
+
+        .btn-blue:active {
+            transform: translateY(3px);
+            border-bottom: 2px solid #0369a1;
+        }
+
+        /* Floating animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        .floating {
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+
+        /* Key alert toast banner */
+        #key-banner {
+            transition: all 0.3s ease;
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        #key-banner.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Modal styling */
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Touch control buttons */
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(4px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            user-select: none;
+        }
+
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-2 md:p-4">
+
+    <!-- MAIN GAME WRAPPER -->
+    <div class="w-full max-w-5xl flex flex-col items-center justify-between h-full max-h-[880px]">
+
+        <!-- HEADER BANNER -->
+        <header class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl p-3 px-6 flex items-center justify-between mb-2 shadow-lg">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center text-amber-100 text-xl font-bold shadow-md border border-amber-400">
+                    🐱
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-amber-300 leading-tight">El Bosque Mágico de las Letras</h1>
+                    <p class="text-xs text-slate-300">Michi • Laberinto de Plataformas • Lenguaje 1° Básico</p>
+                </div>
+            </div>
+
+            <!-- GAME STATS -->
+            <div class="flex items-center space-x-3 md:space-x-5">
+                <!-- Keys Collected -->
+                <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-amber-400/40">
+                    <span class="text-lg">🔑</span>
+                    <span id="keys-display" class="font-bold text-amber-300 text-sm md:text-base">0/6</span>
+                </div>
+
+                <!-- Stars / Score -->
+                <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-amber-500/30">
+                    <i class="fa-solid fa-star text-amber-400 text-base"></i>
+                    <span id="score-display" class="font-bold text-amber-300 text-sm md:text-base">0</span>
+                </div>
+
+                <!-- Party Collectibles Progress -->
+                <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-pink-500/30">
+                    <i class="fa-solid fa-cake-candles text-pink-400 text-base"></i>
+                    <span id="items-display" class="font-bold text-pink-300 text-sm md:text-base">0/6 Fiesta</span>
+                </div>
+
+                <!-- Sound Toggle -->
+                <button id="btn-sound" class="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-200 transition">
+                    <i class="fa-solid fa-volume-high" id="sound-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CANVAS GAME CONTAINER -->
+        <div id="game-container" class="w-full flex-1 relative flex items-center justify-center bg-slate-900 overflow-hidden">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <!-- NAVIGATION COMPASS / DIRECTIONAL ARROW -->
+            <div id="nav-arrow-container" class="absolute top-4 left-4 bg-slate-900/85 border border-amber-400/60 px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-2 text-xs font-semibold text-amber-300 z-10">
+                <span id="nav-icon">🔑</span>
+                <span id="nav-text">Busca la Llave en el Laberinto</span>
+            </div>
+
+            <!-- KEY REQUIRED BANNER NOTIFICATION -->
+            <div id="key-banner" class="absolute top-4 bg-amber-500 border-2 border-amber-200 text-amber-950 px-6 py-2.5 rounded-full font-bold shadow-xl flex items-center space-x-2 z-20">
+                <span class="text-2xl">🔑</span>
+                <span id="key-banner-text" class="text-sm md:text-base">¡Explora el laberinto y busca la Llave Mágica para abrir el Portal!</span>
+            </div>
+
+            <!-- START SCREEN OVERLAY -->
+            <div id="start-screen" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30">
+                <div class="w-24 h-24 bg-gradient-to-tr from-amber-700 via-amber-600 to-amber-400 rounded-full flex items-center justify-center text-5xl mb-4 shadow-xl border-4 border-amber-300 floating">
+                    🐱
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-amber-300 mb-2">¡El Laberinto Mágico de Michi!</h2>
+                <p class="text-slate-200 max-w-lg mb-6 text-sm md:text-base leading-relaxed">
+                    ¡Acompáñanos a explorar un bosque laberíntico! Salta en <b>Champiñones Bouncers 🍄</b>, esquiva los <b>Cactus Grandes 🌵</b> y las <b>Serpientes 🐍</b>, encuentra la <b>Llave 🔑</b> escondida en el laberinto y resuelve los <b>24 desafíos educativos</b> para llegar a la Gran Fiesta.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="start-btn" class="btn-magical text-amber-950 font-bold text-xl px-8 py-3.5 rounded-2xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer hover:brightness-110">
+                        <i class="fa-solid fa-play"></i>
+                        <span>¡Entrar al Laberinto!</span>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-6">Controles: Flechas ⬅️ ➡️ para Moverte • Saltar con ⬆️ / Espacio / Botones Táctiles</p>
+            </div>
+
+            <!-- LEVEL COMPLETE / WIN OVERLAY -->
+            <div id="win-screen" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-40">
+                <div class="text-6xl mb-2 floating">🎉🎂🐱🎈👑</div>
+                <h2 class="text-3xl md:text-4xl font-bold text-amber-300 mb-2">¡Gran Fiesta en el Bosque Mágico!</h2>
+                <p class="text-slate-200 max-w-md mb-4 text-sm md:text-base">
+                    ¡Impresionante! Conseguiste todas las llaves, superaste los 6 portales y completaste los 24 desafíos pedagógicos.
+                </p>
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-amber-500/30 mb-6 flex space-x-6">
+                    <div>
+                        <p class="text-xs text-slate-400">Puntaje Total</p>
+                        <p id="final-score" class="text-2xl font-bold text-amber-400">0</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">Desafíos Logrados</p>
+                        <p class="text-2xl font-bold text-green-400">24 de 24</p>
+                    </div>
+                </div>
+                <button id="restart-btn" class="btn-magical text-amber-950 font-bold text-xl px-8 py-3.5 rounded-2xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer hover:brightness-110">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>¡Jugar de Nuevo!</span>
+                </button>
+            </div>
+
+            <!-- ON-SCREEN CONTROLS FOR MOBILE / TOUCH DEVICES -->
+            <div id="touch-controls" class="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none md:hidden z-10">
+                <div class="flex space-x-3 pointer-events-auto">
+                    <button id="touch-left" class="touch-btn w-14 h-14 active:scale-95">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <button id="touch-right" class="touch-btn w-14 h-14 active:scale-95">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                <button id="touch-jump" class="touch-btn w-16 h-16 bg-amber-500/40 border-amber-300 pointer-events-auto active:scale-95">
+                    <i class="fa-solid fa-arrow-up text-2xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- EDUCATIONAL QUESTION MODAL OVERLAY -->
+        <div id="question-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+            <div class="bg-slate-900 border-4 border-amber-400 rounded-3xl p-6 max-w-xl w-full shadow-2xl relative flex flex-col items-center">
+                
+                <!-- TOP BADGE WITH OA LEVEL -->
+                <div class="absolute -top-6 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold px-6 py-2 rounded-full border-2 border-amber-200 shadow-md flex items-center space-x-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span id="modal-oa-badge">Desafío 1: Conciencia Fonológica (OA 03)</span>
+                </div>
+
+                <!-- VOICE AUDIO BUTTON FOR AUDITORY ASSISTANCE -->
+                <div class="w-full flex justify-end mt-2 mb-2">
+                    <button id="btn-read-aloud" class="btn-blue text-white px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center space-x-2 hover:brightness-110">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Escuchar Pregunta</span>
+                    </button>
+                </div>
+
+                <!-- QUESTION TITLE & PROMPT -->
+                <div class="text-center my-2 w-full">
+                    <!-- GIANT IMAGE DISPLAY AREA -->
+                    <div id="modal-icon" class="text-7xl md:text-8xl my-2 filter drop-shadow-xl transform transition hover:scale-110 duration-200">✨</div>
+                    <h3 id="modal-question-title" class="text-xl md:text-2xl font-bold text-amber-300 mb-2">
+                        ¿Cuántas sílabas tiene esta palabra?
+                    </h3>
+                    <div id="modal-word-card" class="bg-slate-800 border-2 border-slate-700 px-6 py-3 rounded-2xl my-2 inline-block">
+                        <span id="modal-target-word" class="text-3xl md:text-4xl font-extrabold tracking-wider text-green-400">MA-RI-PO-SA</span>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC ANSWER OPTIONS -->
+                <div id="modal-answers-container" class="w-full my-3 flex flex-wrap justify-center gap-3 md:gap-4">
+                    <!-- Dynamic buttons injected via JavaScript -->
+                </div>
+
+                <!-- FEEDBACK MESSAGE -->
+                <div id="modal-feedback" class="h-8 text-center font-bold text-base md:text-lg transition-all duration-300">
+                    <!-- "¡Excelente!" or "¡Inténtalo de nuevo!" -->
+                </div>
+
+                <!-- STEP PROGRESS DOTS (4 EXERCISES PER PORTAL) -->
+                <div class="flex items-center space-x-2 mt-3">
+                    <div id="dot-1" class="w-4 h-4 rounded-full bg-amber-400"></div>
+                    <div id="dot-2" class="w-4 h-4 rounded-full bg-slate-700"></div>
+                    <div id="dot-3" class="w-4 h-4 rounded-full bg-slate-700"></div>
+                    <div id="dot-4" class="w-4 h-4 rounded-full bg-slate-700"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Audio Synthesizer Engine using Web Audio API
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playJump() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(480, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playBounce() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(650, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCoin() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(587.33, this.ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.08); // A5
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playKeyCollect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [659.25, 783.99, 1046.50, 1318.51].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.06);
+                    gain.gain.linearRampToValueAtTime(0, now + i * 0.06 + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.12);
+                });
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.25, now + i * 0.08);
+                    gain.gain.linearRampToValueAtTime(0, now + i * 0.08 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.15);
+                });
+            }
+
+            playHit() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+        }
+
+        const soundFX = new SoundEffects();
+
+        // Speech Synthesis for early readers
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Variables
+        let gameState = 'START'; // 'START', 'PLAYING', 'MODAL', 'WIN'
+        let score = 0;
+        let keysCollected = 0;
+        let partyItemsCollected = 0;
+
+        // Player: Brown Tabby Cat with Black & Grey Stripes/Patches
+        const player = {
+            x: 80,
+            y: 100,
+            width: 42,
+            height: 42,
+            vx: 0,
+            vy: 0,
+            speed: 5.2,
+            jumpPower: -12.8,
+            gravity: 0.58,
+            grounded: false,
+            facingRight: true,
+            invulnerableTimer: 0
+        };
+
+        const keys = {
+            left: false,
+            right: false,
+            jump: false
+        };
+
+        // World Parameters & Camera
+        let cameraX = 0;
+        let cameraY = 0;
+        let levelWidth = 6200; 
+
+        let platforms = [];
+        let obstacles = [];
+        let bouncePads = [];
+        let collectibles = [];
+        let magicKeys = [];
+        let magicDoors = [];
+        let decorations = [];
+
+        // Dynamic Scenery Environments per Portal Region
+        const environmentThemes = [
+            { name: 'Bosque Soleado', skyTop: '#0284c7', skyMid: '#38bdf8', groundGrass: '#22c55e', treeColor: 'rgba(16, 185, 129, 0.35)' },
+            { name: 'Bosque Atardecer', skyTop: '#9a3412', skyMid: '#fb923c', groundGrass: '#f59e0b', treeColor: 'rgba(217, 119, 6, 0.35)' },
+            { name: 'Bosque Nocturno', skyTop: '#0f172a', skyMid: '#312e81', groundGrass: '#10b981', treeColor: 'rgba(99, 102, 241, 0.35)' },
+            { name: 'Cueva de Cristal', skyTop: '#3b0764', skyMid: '#7e22ce', groundGrass: '#06b6d4', treeColor: 'rgba(192, 132, 252, 0.35)' },
+            { name: 'Valle Dorado', skyTop: '#854d0e', skyMid: '#facc15', groundGrass: '#84cc16', treeColor: 'rgba(234, 179, 8, 0.35)' },
+            { name: 'Gran Fiesta', skyTop: '#831843', skyMid: '#f43f5e', groundGrass: '#a855f7', treeColor: 'rgba(244, 114, 182, 0.35)' }
+        ];
+
+        function initLevel() {
+            score = 0;
+            keysCollected = 0;
+            partyItemsCollected = 0;
+            player.x = 80;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
+            player.invulnerableTimer = 0;
+            cameraX = 0;
+            cameraY = 0;
+
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('keys-display').innerText = `${keysCollected}/6`;
+            document.getElementById('items-display').innerText = `${partyItemsCollected}/6 Fiesta`;
+
+            const baseY = canvas.height - 50;
+
+            // Multi-level Maze Platforms Structure
+            platforms = [
+                // Ground sections with gaps between regions
+                { x: 0, y: baseY, w: 900, h: 60, type: 'ground' },
+                { x: 980, y: baseY, w: 900, h: 60, type: 'ground' },
+                { x: 1960, y: baseY, w: 900, h: 60, type: 'ground' },
+                { x: 2940, y: baseY, w: 900, h: 60, type: 'ground' },
+                { x: 3920, y: baseY, w: 900, h: 60, type: 'ground' },
+                { x: 4900, y: baseY, w: 1200, h: 60, type: 'ground' },
+
+                // --- REGION 1: MAZE TOWER & LOWER CAVERN ---
+                { x: 200, y: baseY - 120, w: 180, h: 22, type: 'wood' },
+                { x: 420, y: baseY - 200, w: 160, h: 22, type: 'wood' },
+                { x: 220, y: baseY - 300, w: 180, h: 22, type: 'wood' }, // High tower ledge
+                { x: 450, y: baseY - 380, w: 200, h: 22, type: 'wood' }, // Portal tower top!
+                { x: 620, y: baseY - 140, w: 160, h: 22, type: 'wood' },
+                // Vertical Maze Wall in Region 1
+                { x: 400, y: baseY - 180, w: 24, h: 100, type: 'wall' },
+
+                // --- REGION 2: ZIG-ZAG CANYON & MOVING BRIDGES ---
+            { x: 1080, y: baseY - 130, w: 150, h: 22, type: 'wood' },
+            { x: 1280, y: baseY - 220, w: 140, h: 22, type: 'moving', startX: 1280, range: 140, speed: 1.6, dir: 1 },
+            { x: 1500, y: baseY - 320, w: 180, h: 22, type: 'crystal' }, // Key high cliff
+            { x: 1220, y: baseY - 380, w: 180, h: 22, type: 'wood' }, // High maze ledge
+            { x: 1620, y: baseY - 180, w: 160, h: 22, type: 'wood' },
+
+            // --- REGION 3: SKY CLOUD CASTLE ---
+            { x: 2060, y: baseY - 120, w: 160, h: 22, type: 'wood' },
+            { x: 2260, y: baseY - 220, w: 150, h: 22, type: 'cloud' },
+            { x: 2480, y: baseY - 320, w: 180, h: 22, type: 'cloud' },
+            { x: 2180, y: baseY - 420, w: 200, h: 22, type: 'cloud' },
+            { x: 2600, y: baseY - 160, w: 160, h: 22, type: 'wood' },
+
+            // --- REGION 4: CRYSTAL CAVERN SHAFT ---
+            { x: 3040, y: baseY - 130, w: 160, h: 22, type: 'crystal' },
+            { x: 3260, y: baseY - 230, w: 150, h: 22, type: 'moving', startX: 3260, range: 120, speed: 1.8, dir: 1 },
+            { x: 3120, y: baseY - 350, w: 180, h: 22, type: 'crystal' },
+            { x: 3480, y: baseY - 330, w: 180, h: 22, type: 'crystal' },
+            { x: 3600, y: baseY - 170, w: 160, h: 22, type: 'wood' },
+
+            // --- REGION 5: GOLDEN PEAKS ---
+            { x: 4020, y: baseY - 140, w: 160, h: 22, type: 'wood' },
+            { x: 4220, y: baseY - 240, w: 160, h: 22, type: 'cloud' },
+            { x: 4440, y: baseY - 340, w: 180, h: 22, type: 'wood' },
+            { x: 4160, y: baseY - 420, w: 200, h: 22, type: 'cloud' },
+            { x: 4560, y: baseY - 180, w: 160, h: 22, type: 'wood' },
+
+            // --- REGION 6: CELEBRATION BALCONIES ---
+            { x: 5000, y: baseY - 140, w: 160, h: 22, type: 'wood' },
+            { x: 5200, y: baseY - 250, w: 160, h: 22, type: 'moving', startX: 5200, range: 150, speed: 2.0, dir: 1 },
+            { x: 5120, y: baseY - 380, w: 180, h: 22, type: 'wood' },
+            { x: 5450, y: baseY - 380, w: 200, h: 22, type: 'wood' },
+            { x: 5560, y: baseY - 180, w: 160, h: 22, type: 'wood' }
+        ];
+
+        // Hazards & Obstacles to Dodge (Cactus Grandes, Serpientes, Orbes)
+        obstacles = [
+            // Region 1
+            { x: 450, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 260, y: baseY - 140, type: 'bramble', radius: 20 },
+            { x: 650, y: baseY - 155, type: 'patrol', startX: 630, endX: 750, speed: 1.2, x: 650, y: baseY - 155, radius: 16, dir: 1 },
+
+            // Region 2
+            { x: 1350, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 1100, y: baseY - 145, type: 'patrol', startX: 1090, endX: 1200, speed: 1.5, x: 1100, y: baseY - 145, radius: 16, dir: 1 },
+            { x: 1650, y: baseY - 200, type: 'bramble', radius: 20 },
+
+            // Region 3
+            { x: 2300, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 2300, y: baseY - 255, type: 'orb', startY: baseY - 290, endY: baseY - 220, speed: 1.2, x: 2300, y: baseY - 255, radius: 14, dir: 1 },
+            { x: 2640, y: baseY - 175, type: 'patrol', startX: 2610, endX: 2720, speed: 1.5, x: 2640, y: baseY - 175, radius: 16, dir: 1 },
+
+            // Region 4
+            { x: 3300, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 3080, y: baseY - 145, type: 'patrol', startX: 3050, endX: 3180, speed: 1.6, x: 3080, y: baseY - 145, radius: 16, dir: 1 },
+            { x: 3650, y: baseY - 200, type: 'bramble', radius: 20 },
+
+            // Region 5
+            { x: 4300, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 4250, y: baseY - 265, type: 'orb', startY: baseY - 300, endY: baseY - 230, speed: 1.4, x: 4250, y: baseY - 265, radius: 14, dir: 1 },
+            { x: 4580, y: baseY - 195, type: 'patrol', startX: 4570, endX: 4680, speed: 1.5, x: 4580, y: baseY - 195, radius: 16, dir: 1 },
+
+            // Region 6
+            { x: 5300, y: baseY - 20, type: 'bramble', radius: 22 },
+            { x: 5250, y: baseY - 275, type: 'patrol', startX: 5230, endX: 5360, speed: 1.8, x: 5250, y: baseY - 275, radius: 16, dir: 1 }
+        ];
+
+        // Bouncy Spring Mushrooms 🍄 (Propels Michi high into upper maze levels)
+        bouncePads = [
+            { x: 320, y: baseY - 15, w: 40, h: 15, bouncePower: -16.5 },
+            { x: 1120, y: baseY - 15, w: 40, h: 15, bouncePower: -17 },
+            { x: 2100, y: baseY - 15, w: 40, h: 15, bouncePower: -17.5 },
+            { x: 3080, y: baseY - 15, w: 40, h: 15, bouncePower: -17 },
+            { x: 4060, y: baseY - 15, w: 40, h: 15, bouncePower: -17.5 },
+            { x: 5040, y: baseY - 15, w: 40, h: 15, bouncePower: -17.5 }
+        ];
+
+        // Hidden Keys Placement in Multi-level Maze
+        magicKeys = [
+                { id: 0, x: 260, y: baseY - 330, collected: false },  // Region 1: High tower alcove
+                { id: 1, x: 1540, y: baseY - 350, collected: false }, // Region 2: High cliff
+                { id: 2, x: 2520, y: baseY - 370, collected: false }, // Region 3: Cloud sky island
+                { id: 3, x: 3160, y: baseY - 420, collected: false }, // Region 4: Crystal shaft top
+                { id: 4, x: 4480, y: baseY - 390, collected: false }, // Region 5: Golden pinnacle
+                { id: 5, x: 5160, y: baseY - 440, collected: false }  // Region 6: Sky cake tower
+            ];
+
+            // Obstacle Portals Placements in Multi-level Maze
+            magicDoors = [
+                { x: 500, y: baseY - 490, w: 70, h: 110, solved: false, keyIndex: 0 },  // Region 1: Portal atop high wooden tower
+                { x: 1660, y: baseY - 290, w: 70, h: 110, solved: false, keyIndex: 1 }, // Region 2: Mid-level canyon chamber
+                { x: 2220, y: baseY - 530, w: 70, h: 110, solved: false, keyIndex: 2 }, // Region 3: Cloud castle peak
+                { x: 3520, y: baseY - 430, w: 70, h: 110, solved: false, keyIndex: 3 }, // Region 4: Upper crystal cavern
+                { x: 4200, y: baseY - 510, w: 70, h: 110, solved: false, keyIndex: 4 }, // Region 5: High golden lookout
+                { x: 5500, y: baseY - 480, w: 70, h: 110, solved: false, keyIndex: 5 }  // Region 6: Balcony stage
+            ];
+
+            // Collectibles
+            collectibles = [
+                { x: 280, y: baseY - 150, type: 'star', collected: false },
+                { x: 450, y: baseY - 230, type: 'cupcake', collected: false },
+                { x: 1120, y: baseY - 160, type: 'star', collected: false },
+                { x: 1320, y: baseY - 250, type: 'balloon', collected: false },
+                { x: 2100, y: baseY - 170, type: 'star', collected: false },
+                { x: 2300, y: baseY - 270, type: 'cupcake', collected: false },
+                { x: 3080, y: baseY - 160, type: 'star', collected: false },
+                { x: 3300, y: baseY - 250, type: 'balloon', collected: false },
+                { x: 4060, y: baseY - 170, type: 'star', collected: false },
+                { x: 4260, y: baseY - 280, type: 'cupcake', collected: false },
+                { x: 5040, y: baseY - 170, type: 'star', collected: false },
+                { x: 5260, y: baseY - 290, type: 'balloon', collected: false }
+            ];
+
+            // Forest decorations
+            decorations = [];
+            for (let i = 80; i < levelWidth; i += 140) {
+                decorations.push({
+                    x: i,
+                    y: baseY,
+                    type: (i % 280 === 0) ? 'mushroom' : 'flower'
+                });
+            }
+        }
+
+        function drawBrownTabbyCat(x, y, facingRight) {
+            ctx.save();
+            ctx.translate(x + player.width / 2, y + player.height / 2);
+            if (!facingRight) ctx.scale(-1, 1);
+
+            // Flashing invulnerability visual effect when hit
+            if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            // Tail
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-12, 10);
+            ctx.quadraticCurveTo(-24, 0, -20, -12);
+            ctx.stroke();
+
+            // Dark stripes on tail
+            ctx.strokeStyle = '#2d2727';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(-16, 6); ctx.lineTo(-14, 2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-20, -2); ctx.lineTo(-18, -6); ctx.stroke();
+
+            // Body (Brown Tabby Base)
+            ctx.fillStyle = '#8b5a2b';
+            ctx.beginPath();
+            ctx.ellipse(0, 6, 16, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Grey / Dark Patches on Body
+            ctx.fillStyle = '#4a4238';
+            ctx.beginPath(); ctx.ellipse(-6, 8, 5, 8, 0.2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(6, 4, 4, 7, -0.2, 0, Math.PI * 2); ctx.fill();
+
+            // Black Stripes on Body
+            ctx.fillStyle = '#232121';
+            ctx.beginPath(); ctx.fillRect(-10, 2, 3, 8); ctx.fill();
+            ctx.beginPath(); ctx.fillRect(-2, 0, 3, 10); ctx.fill();
+            ctx.beginPath(); ctx.fillRect(6, 2, 3, 8); ctx.fill();
+
+            // Head (Brown Base)
+            ctx.fillStyle = '#8b5a2b';
+            ctx.beginPath();
+            ctx.arc(0, -8, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ears
+            ctx.fillStyle = '#654321';
+            ctx.beginPath(); ctx.moveTo(-12, -18); ctx.lineTo(-6, -26); ctx.lineTo(-1, -18); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(12, -18); ctx.lineTo(6, -26); ctx.lineTo(1, -18); ctx.fill();
+
+            // Inner ears (Soft pink)
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath(); ctx.moveTo(-10, -19); ctx.lineTo(-6, -24); ctx.lineTo(-3, -19); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(10, -19); ctx.lineTo(6, -24); ctx.lineTo(3, -19); ctx.fill();
+
+            // Tabby Stripes & Grey Patches on Forehead
+            ctx.fillStyle = '#232121';
+            ctx.fillRect(-2, -22, 4, 6);
+            ctx.fillRect(-8, -20, 3, 5);
+            ctx.fillRect(5, -20, 3, 5);
+
+            // Snout / Muzzle Area (Tan Cream)
+            ctx.fillStyle = '#f5e6d3';
+            ctx.beginPath();
+            ctx.ellipse(0, -4, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(5, -9, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-5, -9, 2.5, 0, Math.PI * 2); ctx.fill();
+
+            // Eye shine
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(6, -10, 1, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-4, -10, 1, 0, Math.PI * 2); ctx.fill();
+
+            // Pink Nose
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath(); ctx.arc(0, -6, 2, 0, Math.PI * 2); ctx.fill();
+
+            // Cheeks
+            ctx.fillStyle = 'rgba(251, 113, 133, 0.35)';
+            ctx.beginPath(); ctx.arc(9, -5, 3.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-9, -5, 3.5, 0, Math.PI * 2); ctx.fill();
+
+            // Tan Paws
+            ctx.fillStyle = '#f5e6d3';
+            ctx.beginPath(); ctx.arc(-8, 18, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(8, 18, 4, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Determine active environment based on player x position
+            const envIndex = Math.min(5, Math.floor(player.x / 980));
+            const env = environmentThemes[envIndex];
+
+            // Dynamic Gradient Sky Background
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, env.skyTop);
+            bgGrad.addColorStop(0.7, env.skyMid);
+            bgGrad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Parallax Trees
+            ctx.fillStyle = env.treeColor;
+            for (let i = -100; i < levelWidth; i += 130) {
+                const drawX = i - cameraX * 0.4;
+                ctx.beginPath();
+                ctx.moveTo(drawX, canvas.height - 50 - cameraY * 0.2);
+                ctx.lineTo(drawX + 45, canvas.height - 240 - cameraY * 0.2);
+                ctx.lineTo(drawX + 90, canvas.height - 50 - cameraY * 0.2);
+                ctx.fill();
+            }
+
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Draw Background Flowers & Mushrooms
+            decorations.forEach(d => {
+                if (d.type === 'mushroom') {
+                    ctx.fillStyle = '#fef08a';
+                    ctx.fillRect(d.x + 6, d.y - 16, 8, 16);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath(); ctx.arc(d.x + 10, d.y - 16, 12, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(d.x + 6, d.y - 20, 2, 0, Math.PI * 2); ctx.fill();
+                } else {
+                    ctx.fillStyle = '#10b981';
+                    ctx.fillRect(d.x + 9, d.y - 12, 3, 12);
+                    ctx.fillStyle = '#ec4899';
+                    ctx.beginPath(); ctx.arc(d.x + 10, d.y - 15, 6, 0, Math.PI * 2); ctx.fill();
+                }
+            });
+
+            // Draw Platforms & Maze Barriers
+            platforms.forEach(p => {
+                if (p.type === 'ground') {
+                    ctx.fillStyle = env.groundGrass;
+                    ctx.fillRect(p.x, p.y, p.w, 15);
+                    ctx.fillStyle = '#78350f';
+                    ctx.fillRect(p.x, p.y + 15, p.w, p.h - 15);
+                } else if (p.type === 'wood' || p.type === 'moving') {
+                    ctx.fillStyle = '#b45309';
+                    ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 8); ctx.fill();
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(p.x + 4, p.y + 3, p.w - 8, 4);
+                } else if (p.type === 'wall') {
+                    ctx.fillStyle = '#78350f';
+                    ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 6); ctx.fill();
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(p.x + 3, p.y + 3, p.w - 6, p.h - 6);
+                } else if (p.type === 'cloud') {
+                    ctx.fillStyle = '#e0f2fe';
+                    ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 12); ctx.fill();
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(p.x + 6, p.y + p.h - 5, p.w - 12, 3);
+                } else if (p.type === 'crystal') {
+                    ctx.fillStyle = '#a855f7';
+                    ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 6); ctx.fill();
+                    ctx.fillStyle = '#22d3ee';
+                    ctx.fillRect(p.x + 4, p.y + 3, p.w - 8, 4);
+                }
+            });
+
+            // Draw Bouncy Spring Mushrooms 🍄
+            bouncePads.forEach(bp => {
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🍄', bp.x + bp.w / 2, bp.y + 12);
+            });
+
+            // Draw Hazards & Obstacles
+            obstacles.forEach(obs => {
+                if (obs.type === 'bramble') {
+                    ctx.font = '38px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🌵', obs.x, obs.y + 8);
+                } else if (obs.type === 'patrol') {
+                    ctx.font = '28px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🐍', obs.x, obs.y + 6);
+                } else if (obs.type === 'orb') {
+                    ctx.font = '24px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔮', obs.x, obs.y + 6);
+                }
+            });
+
+            // Draw Magic Keys 🔑
+            magicKeys.forEach(k => {
+                if (!k.collected) {
+                    ctx.font = '28px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔑', k.x, k.y);
+                }
+            });
+
+            // Draw Obstacle Portals (Owl Guardians)
+            magicDoors.forEach((door, index) => {
+                if (!door.solved) {
+                    const hasKey = magicKeys[door.keyIndex].collected;
+                    ctx.fillStyle = hasKey ? '#8b5cf6' : '#64748b';
+                    ctx.beginPath();
+                    ctx.roundRect(door.x, door.y, door.w, door.h, [35, 35, 0, 0]);
+                    ctx.fill();
+
+                    ctx.fillStyle = hasKey ? '#c084fc' : '#94a3b8';
+                    ctx.beginPath();
+                    ctx.roundRect(door.x + 8, door.y + 8, door.w - 16, door.h - 8, [28, 28, 0, 0]);
+                    ctx.fill();
+
+                    ctx.font = '32px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(hasKey ? '🦉' : '🔒', door.x + door.w / 2, door.y + 50);
+
+                    ctx.font = 'bold 11px Fredoka';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(hasKey ? '¡Portal!' : 'Bloqueado', door.x + door.w / 2, door.y + 80);
+                    ctx.fillText(hasKey ? 'OA 03/04/15' : 'Busca 🔑', door.x + door.w / 2, door.y + 95);
+                } else {
+                    ctx.fillStyle = 'rgba(74, 222, 128, 0.4)';
+                    ctx.beginPath(); ctx.roundRect(door.x, door.y, door.w, door.h, [35, 35, 0, 0]); ctx.fill();
+                    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 4; ctx.stroke();
+                    ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText('✨✅', door.x + door.w / 2, door.y + 60);
+                }
+            });
+
+            // Draw Collectibles
+            collectibles.forEach(c => {
+                if (!c.collected) {
+                    ctx.font = '24px sans-serif';
+                    ctx.textAlign = 'center';
+                    let icon = '⭐';
+                    if (c.type === 'cupcake') icon = '🧁';
+                    if (c.type === 'balloon') icon = '🎈';
+                    ctx.fillText(icon, c.x, c.y);
+                }
+            });
+
+            // Draw Tabby Cat
+            drawBrownTabbyCat(player.x, player.y, player.facingRight);
+
+            ctx.restore();
+
+            // Update Directional Navigation Compass Arrow
+            updateNavCompass();
+        }
+
+        function updateNavCompass() {
+            const currentRegionIndex = Math.min(5, Math.floor(player.x / 980));
+            const navText = document.getElementById('nav-text');
+            const navIcon = document.getElementById('nav-icon');
+
+            if (magicKeys[currentRegionIndex] && !magicKeys[currentRegionIndex].collected) {
+                navIcon.innerText = '🔑';
+                navText.innerText = 'Busca la Llave en el Laberinto';
+            } else if (magicDoors[currentRegionIndex] && !magicDoors[currentRegionIndex].solved) {
+                navIcon.innerText = '🦉';
+                navText.innerText = '¡Ve al Portal Mágico!';
+            } else {
+                navIcon.innerText = '➡️';
+                navText.innerText = 'Avanza a la siguiente Zona';
+            }
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            if (player.invulnerableTimer > 0) player.invulnerableTimer--;
+
+            // Horizontal Movement
+            if (keys.left) {
+                player.vx = -player.speed;
+                player.facingRight = false;
+            } else if (keys.right) {
+                player.vx = player.speed;
+                player.facingRight = true;
+            } else {
+                player.vx *= 0.8;
+            }
+
+            // Jump
+            if (keys.jump && player.grounded) {
+                player.vy = player.jumpPower;
+                player.grounded = false;
+                soundFX.playJump();
+            }
+
+            // Apply Gravity
+            player.vy += player.gravity;
+
+            // Apply Velocities
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Bound left side
+            if (player.x < 0) player.x = 0;
+
+            // Update Moving Platforms
+            platforms.forEach(p => {
+                if (p.type === 'moving') {
+                    p.x += p.speed * p.dir;
+                    if (p.x > p.startX + p.range || p.x < p.startX) {
+                        p.dir *= -1;
+                    }
+                }
+            });
+
+            // Update Patrol Hazards
+            obstacles.forEach(obs => {
+                if (obs.type === 'patrol') {
+                    obs.x += obs.speed * obs.dir;
+                    if (obs.x > obs.endX || obs.x < obs.startX) obs.dir *= -1;
+                } else if (obs.type === 'orb') {
+                    obs.y += obs.speed * obs.dir;
+                    if (obs.y > obs.endY || obs.y < obs.startY) obs.dir *= -1;
+                }
+            });
+
+            // Collision with Bouncy Spring Mushrooms 🍄
+            bouncePads.forEach(bp => {
+                if (player.x + player.width > bp.x &&
+                    player.x < bp.x + bp.w &&
+                    player.y + player.height >= bp.y &&
+                    player.y + player.height <= bp.y + bp.h + 15 &&
+                    player.vy >= 0) {
+                    
+                    player.vy = bp.bouncePower;
+                    player.grounded = false;
+                    soundFX.playBounce();
+                }
+            });
+
+            // Platform Physics & Maze Walls Collisions
+            player.grounded = false;
+            platforms.forEach(p => {
+                if (p.type === 'wall') {
+                    // Vertical Maze Wall Collision
+                    if (player.x + player.width > p.x && player.x < p.x + p.w &&
+                        player.y + player.height > p.y + 4 && player.y < p.y + p.h - 4) {
+                        if (player.vx > 0) player.x = p.x - player.width;
+                        else if (player.vx < 0) player.x = p.x + p.w;
+                        player.vx = 0;
+                    }
+                } else {
+                    // Horizontal Platform Collision
+                    if (player.x + player.width > p.x &&
+                        player.x < p.x + p.w &&
+                        player.y + player.height >= p.y &&
+                        player.y + player.height <= p.y + p.h + player.vy) {
+                        
+                        if (player.vy >= 0) {
+                            player.y = p.y - player.height;
+                            player.vy = 0;
+                            player.grounded = true;
+
+                            if (p.type === 'moving') {
+                                player.x += p.speed * p.dir;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Hazard / Obstacles Collisions (Zarsas, Patrol Sparks, Orbs)
+            if (player.invulnerableTimer === 0) {
+                obstacles.forEach(obs => {
+                    const dist = Math.hypot((player.x + player.width / 2) - obs.x, (player.y + player.height / 2) - obs.y);
+                    if (dist < obs.radius + 14) {
+                        // Knockback
+                        player.vy = -6;
+                        player.vx = player.facingRight ? -8 : 8;
+                        player.invulnerableTimer = 40; // ~0.7 seconds invulnerability
+                        soundFX.playHit();
+                    }
+                });
+            }
+
+            // Reset if falling into bottom pit gap
+            if (player.y > canvas.height + 250) {
+                player.x = Math.max(50, player.x - 200);
+                player.y = canvas.height - 250;
+                player.vy = 0;
+            }
+
+            // Smooth 2D Camera Tracking (X and Y coordinates for vertical maze climbing)
+            const targetCamX = player.x - canvas.width / 3;
+            const targetCamY = Math.max(0, (canvas.height - 50) - player.y - canvas.height / 2 + 100);
+
+            cameraX += (targetCamX - cameraX) * 0.1;
+            cameraY += (targetCamY - cameraY) * 0.1;
+
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
+            if (cameraY < 0) cameraY = 0;
+
+            // Collectible Magic Keys Collision
+            magicKeys.forEach(k => {
+                if (!k.collected) {
+                    const dist = Math.hypot((player.x + player.width / 2) - k.x, (player.y + player.height / 2) - (k.y - 10));
+                    if (dist < 32) {
+                        k.collected = true;
+                        keysCollected++;
+                        score += 100;
+                        document.getElementById('keys-display').innerText = `${keysCollected}/6`;
+                        document.getElementById('score-display').innerText = score;
+                        soundFX.playKeyCollect();
+                    }
+                }
+            });
+
+            // Stars & Party Treats Collision
+            collectibles.forEach(c => {
+                if (!c.collected) {
+                    const dist = Math.hypot((player.x + player.width / 2) - c.x, (player.y + player.height / 2) - (c.y - 10));
+                    if (dist < 28) {
+                        c.collected = true;
+                        score += 50;
+                        document.getElementById('score-display').innerText = score;
+                        soundFX.playCoin();
+                    }
+                }
+            });
+
+            // Magic Obstacle Portals Check
+            magicDoors.forEach((door, index) => {
+                if (!door.solved) {
+                    if (player.x + player.width >= door.x && player.x <= door.x + door.w &&
+                        player.y + player.height >= door.y && player.y <= door.y + door.h) {
+                        if (magicKeys[door.keyIndex].collected) {
+                            // Player has key -> Open Challenge Modal
+                            triggerChallenge(index);
+                        } else {
+                            // Key missing -> Show notification banner and bounce player back
+                            showKeyBanner();
+                            player.x -= 35;
+                            player.vx = 0;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Show Toast Notification Banner when key is missing
+        let keyBannerTimeout;
+        function showKeyBanner() {
+            const banner = document.getElementById('key-banner');
+            banner.classList.add('show');
+            soundFX.playWrong();
+            clearTimeout(keyBannerTimeout);
+            keyBannerTimeout = setTimeout(() => {
+                banner.classList.remove('show');
+            }, 2500);
+        }
+
+        // Game Loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        const challengeSets = [
+            // Portal 1 (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 03 - Conciencia Fonológica', title: '¿Cuántas sílabas tiene esta palabra?', word: 'MA - RI - PO - SA', showWord: true, icon: '🦋', options: ['2', '3', '4', '5'], correct: '4', voicePrompt: '¿Cuántas sílabas tiene la palabra Ma-ri-po-sa?' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿Qué palabra corresponde a esta imagen?', word: '', showWord: false, icon: '🐱', options: ['PATO', 'GATO', 'RATO', 'PERRO'], correct: 'GATO', voicePrompt: 'Observa la imagen y elige la palabra correcta' },
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la palabra con la sílaba que falta:', word: 'MA - RI - __ - SA', showWord: true, icon: '🦋', options: ['PO', 'PA', 'PI', 'PU'], correct: 'PO', voicePrompt: '¿Qué sílaba falta para completar Ma-ri-po-sa?' },
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba faltante:', word: 'SOL - DA - __', showWord: true, icon: '💂', options: ['DO', 'DA', 'DE', 'DU'], correct: 'DO', voicePrompt: '¿Qué sílaba falta para Sol-da-do?' }
+            ],
+            // Portal 2 (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba faltante para este amigo:', word: 'PE - __', showWord: true, icon: '🐶', options: ['RRO', 'LLO', 'TO', 'NA'], correct: 'RRO', voicePrompt: '¿Qué sílaba falta para escribir Perro?' },
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Reconoce la imagen y elige sus sílabas en orden:', word: '', showWord: false, icon: '🎈', options: ['GLO - BO', 'BO - GLO', 'LO - GBO', 'GLO - BA'], correct: 'GLO - BO', voicePrompt: 'Observa la imagen del globo y selecciona sus sílabas en orden' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿Qué palabra representa esta imagen?', word: '', showWord: false, icon: '🌙', options: ['LUNA', 'SOL', 'ESTRELLA', 'NUBE'], correct: 'LUNA', voicePrompt: 'Mira la imagen y elige la palabra correcta' },
+                { oa: 'OA 03 - Conciencia Fonológica', title: '¿Cuántas sílabas tiene esta palabra?', word: 'ES - TRE - LLA', showWord: true, icon: '⭐', options: ['2', '3', '4', '1'], correct: '3', voicePrompt: '¿Cuántas sílabas tiene la palabra Es-tre-lla?' }
+            ],
+            // Portal 3 (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Observa el pastel y selecciona sus sílabas en orden:', word: '', showWord: false, icon: '🧁', options: ['PAS - TEL', 'TEL - PAS', 'PAS - TAL', 'TAS - PEL'], correct: 'PAS - TEL', voicePrompt: 'Observa el pastel y selecciona sus sílabas ordenadas' },
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba faltante del postre:', word: 'HE - LA - __', showWord: true, icon: '🍦', options: ['DO', 'DA', 'TO', 'DE'], correct: 'DO', voicePrompt: '¿Qué sílaba falta para completar He-la-do?' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿En qué lugar estamos explorando?', word: '', showWord: false, icon: '🌳', options: ['BOSQUE', 'PLAYA', 'CIUDAD', 'CASA'], correct: 'BOSQUE', voicePrompt: 'Mira la imagen y selecciona la palabra Bosque' },
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Reconoce al animal y ordena sus sílabas:', word: '', showWord: false, icon: '🐰', options: ['CO - NE - JO', 'NE - CO - JO', 'JO - NE - CO', 'CO - JO - NE'], correct: 'CO - NE - JO', voicePrompt: 'Observa al conejo y elige sus sílabas en orden' }
+            ],
+            // Portal 4 (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba faltante:', word: 'ZA - PA - __', showWord: true, icon: '👟', options: ['TO', 'TA', 'TE', 'TU'], correct: 'TO', voicePrompt: '¿Qué sílaba falta para Za-pa-to?' },
+                { oa: 'OA 03 - Conciencia Fonológica', title: '¿Cuántas sílabas tiene esta palabra?', word: 'CA - MI - NO', showWord: true, icon: '🛣️', options: ['2', '3', '4', '1'], correct: '3', voicePrompt: '¿Cuántas sílabas tiene la palabra Ca-mi-no?' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿Qué fruta rica representa esta imagen?', word: '', showWord: false, icon: '🍎', options: ['MANZANA', 'PERA', 'PLATANO', 'UVA'], correct: 'MANZANA', voicePrompt: 'Observa la imagen y elige la palabra Manzana' },
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Observa el vehículo y elige sus sílabas en orden:', word: '', showWord: false, icon: '🚗', options: ['AU - TO', 'TO - AU', 'AU - TA', 'OT - AU'], correct: 'AU - TO', voicePrompt: 'Mira el auto y elige sus sílabas ordenadas' }
+            ],
+            // Portal 5 (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba que falta:', word: 'PA - PA - __', showWord: true, icon: '🦜', options: ['LO', 'GA', 'LA', 'RO'], correct: 'GA', voicePrompt: '¿Qué sílaba falta para Pa-pa-ga-yo?' },
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Observa la sorpresa de cumpleaños y ordena sus sílabas:', word: '', showWord: false, icon: '🎁', options: ['RE - GA - LO', 'GA - RE - LO', 'LO - RE - GA', 'RE - LO - GA'], correct: 'RE - GA - LO', voicePrompt: 'Observa el regalo y elige sus sílabas ordenadas' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿Qué alimento de fiesta es este?', word: '', showWord: false, icon: '🎂', options: ['TORTA', 'PAN', 'QUESO', 'SOPA'], correct: 'TORTA', voicePrompt: 'Mira la imagen y selecciona la palabra Torta' },
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la sílaba faltante de la prendas de vestir:', word: 'CA - MI - SA - __', showWord: true, icon: '👕', options: ['TA', 'TO', 'TE', 'TU'], correct: 'TA', voicePrompt: '¿Qué sílaba falta para Ca-mi-sa-ta?' }
+            ],
+            // Portal 6 - Final Fiesta! (OA 03 / OA 04 / OA 15)
+            [
+                { oa: 'OA 03 - Conciencia Fonológica', title: '¿Cuántas sílabas tiene la palabra de la celebración?', word: 'FIES - TA', showWord: true, icon: '🎉', options: ['1', '2', '3', '4'], correct: '2', voicePrompt: '¿Cuántas sílabas tiene la palabra Fies-ta?' },
+                { oa: 'OA 04 / OA 15 - Ordenar Sílabas', title: 'Observa la corona de rey/reina y elige sus sílabas:', word: '', showWord: false, icon: '👑', options: ['CO - RO - NA', 'RO - CO - NA', 'NA - CO - RO', 'CO - NA - RO'], correct: 'CO - RO - NA', voicePrompt: 'Mira la corona y selecciona sus sílabas en el orden correcto' },
+                { oa: 'OA 04 - Lectura de Palabras', title: '¿Qué elemento suena en la fiesta?', word: '', showWord: false, icon: '🎶', options: ['MÚSICA', 'RUIDO', 'SILENCIO', 'VIENTO'], correct: 'MÚSICA', voicePrompt: 'Observa las notas musicales y elige la palabra Música' },
+                { oa: 'OA 15 - Sílaba Faltante', title: 'Completa la última sílaba para dar inicio a la fiesta:', word: 'AM - I - __', showWord: true, icon: '🐱', options: ['GO', 'GA', 'GU', 'GI'], correct: 'GO', voicePrompt: '¿Qué sílaba falta para la palabra A-mi-go?' }
+            ]
+        ];
+
+        let activeCheckpointIndex = 0;
+        let activeExerciseSubIndex = 0;
+
+        function triggerChallenge(checkpointIdx) {
+            gameState = 'MODAL';
+            activeCheckpointIndex = checkpointIdx;
+            activeExerciseSubIndex = 0;
+            
+            player.x -= 25;
+            player.vx = 0;
+
+            showModalExercise();
+        }
+
+        function showModalExercise() {
+            const currentEx = challengeSets[activeCheckpointIndex][activeExerciseSubIndex];
+            const modal = document.getElementById('question-modal');
+            modal.classList.remove('hidden');
+
+            document.getElementById('modal-oa-badge').innerText = currentEx.oa;
+            document.getElementById('modal-question-title').innerText = currentEx.title;
+            document.getElementById('modal-icon').innerText = currentEx.icon;
+            document.getElementById('modal-feedback').innerText = '';
+
+            const wordCard = document.getElementById('modal-word-card');
+            if (currentEx.showWord && currentEx.word) {
+                wordCard.classList.remove('hidden');
+                document.getElementById('modal-target-word').innerText = currentEx.word;
+            } else {
+                wordCard.classList.add('hidden');
+            }
+
+            // Update Progress Dots (4 per Portal)
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i - 1 < activeExerciseSubIndex) {
+                    dot.className = 'w-4 h-4 rounded-full bg-green-400';
+                } else if (i - 1 === activeExerciseSubIndex) {
+                    dot.className = 'w-4 h-4 rounded-full bg-amber-400 animate-pulse';
+                } else {
+                    dot.className = 'w-4 h-4 rounded-full bg-slate-700';
+                }
+            }
+
+            // Render Answer Option Buttons
+            const container = document.getElementById('modal-answers-container');
+            container.innerHTML = '';
+
+            currentEx.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-purple text-white text-xl md:text-2xl font-bold px-6 py-3.5 rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition min-w-[120px] cursor-pointer';
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswerSelect(opt, currentEx.correct);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('btn-read-aloud').onclick = () => {
+                speakText(`${currentEx.title}. ${currentEx.voicePrompt}`);
+            };
+
+            speakText(currentEx.voicePrompt);
+        }
+
+        function handleAnswerSelect(selectedOption, correctAnswer) {
+            const feedbackEl = document.getElementById('modal-feedback');
+
+            if (selectedOption === correctAnswer) {
+                soundFX.playCorrect();
+                feedbackEl.className = 'h-8 text-center font-bold text-lg text-green-400';
+                feedbackEl.innerText = '¡Excelente! ¡Respuesta Correcta! ✨';
+
+                setTimeout(() => {
+                    activeExerciseSubIndex++;
+                    if (activeExerciseSubIndex >= 4) {
+                        magicDoors[activeCheckpointIndex].solved = true;
+                        partyItemsCollected++;
+                        score += 250;
+                        document.getElementById('score-display').innerText = score;
+                        document.getElementById('items-display').innerText = `${partyItemsCollected}/6 Fiesta`;
+
+                        document.getElementById('question-modal').classList.add('hidden');
+                        
+                        if (partyItemsCollected >= 6) {
+                            gameState = 'WIN';
+                            document.getElementById('final-score').innerText = score;
+                            document.getElementById('win-screen').classList.remove('hidden');
+                            soundFX.playCorrect();
+                        } else {
+                            gameState = 'PLAYING';
+                        }
+                    } else {
+                        showModalExercise();
+                    }
+                }, 1100);
+
+            } else {
+                soundFX.playWrong();
+                feedbackEl.className = 'h-8 text-center font-bold text-lg text-rose-400';
+                feedbackEl.innerText = '¡Casi! Inténtalo de nuevo 💪';
+            }
+        }
+
+        // Keyboard Controls
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = true;
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = false;
+        });
+
+        // Touch On-Screen Controls setup
+        const bindTouch = (id, keyName) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+
+            const startAction = (e) => { e.preventDefault(); keys[keyName] = true; };
+            const endAction = (e) => { e.preventDefault(); keys[keyName] = false; };
+
+            btn.addEventListener('touchstart', startAction);
+            btn.addEventListener('touchend', endAction);
+            btn.addEventListener('mousedown', startAction);
+            btn.addEventListener('mouseup', endAction);
+            btn.addEventListener('mouseleave', endAction);
+        };
+
+        bindTouch('touch-left', 'left');
+        bindTouch('touch-right', 'right');
+        bindTouch('touch-jump', 'jump');
+
+        // Sound Toggle Button
+        document.getElementById('btn-sound').onclick = () => {
+            soundFX.muted = !soundFX.muted;
+            document.getElementById('sound-icon').className = soundFX.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+        };
+
+        // Start & Restart Game Buttons
+        document.getElementById('start-btn').onclick = () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            initLevel();
+            gameState = 'PLAYING';
+            soundFX.init();
+            speakText("¡Bienvenido al Bosque Mágico de las Letras! Junta las Llaves Mágicas para abrir los Portales.");
+        };
+
+        document.getElementById('restart-btn').onclick = () => {
+            document.getElementById('win-screen').classList.add('hidden');
+            initLevel();
+            gameState = 'PLAYING';
+        };
+
+        // Launch on window load
+        window.onload = () => {
+            resizeCanvas();
+            initLevel();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
